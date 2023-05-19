@@ -1,4 +1,7 @@
 alias t := test
 
-test:
+testall:
 	cargo test --all --no-fail-fast --all-features
+
+test:
+	cargo test --all --no-fail-fast --features daemon

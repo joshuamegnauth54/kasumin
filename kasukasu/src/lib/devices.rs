@@ -1,9 +1,16 @@
 use crate::hosterror::HostError;
-use cpal::{traits::HostTrait, Device, Devices, HostId, OutputDevices};
+use cpal::{
+    traits::{DeviceTrait, HostTrait},
+    Device, Devices, HostId, OutputDevices, SupportedOutputConfigs,
+};
 use std::{
     iter::{FusedIterator, Peekable},
     slice,
 };
+use yohane::query::SupportedOutputDevice;
+
+#[cfg(feature = "daemon")]
+use yohane::deviceconfig::{SampleFormat, SupportedDeviceConfig};
 
 /// Container for [HostId] and an associated output [Device].
 pub struct HostDevicePair {
@@ -11,6 +18,8 @@ pub struct HostDevicePair {
     pub hostid: HostId,
     /// An output device as exposed by the [Host].
     pub device: Device,
+    /// Supported output configs.
+    pub configs: SupportedOutputConfigs,
 }
 
 /// Iterator over all hosts and all output devices.
@@ -53,11 +62,22 @@ impl Iterator for AllHostsDevices<'_> {
         // current_host and devices should either both be Some or both None
         // If that's the case, get the next device. If the iterator is exhausted then
         // try to replace it.
-        if let (Some(device), Some(hostid)) = (
-            self.devices.as_mut().and_then(|devices| devices.next()),
+        if let (Some(hostid), Some(device)) = (
             self.current_host,
+            self.devices.as_mut().and_then(|devices| devices.next()),
         ) {
-            Some(Ok(HostDevicePair { hostid, device }))
+            match device.supported_output_configs() {
+                Ok(configs) => Some(Ok(HostDevicePair {
+                    hostid,
+                    device,
+                    configs,
+                })),
+                Err(e) => Some(Err(HostError::new(
+                    e.into(),
+                    Some(hostid),
+                    device.name().ok(),
+                ))),
+            }
         }
         // Do I have a Devices iterator? Is it exhausted?
         else if self.devices.is_none()
@@ -97,17 +117,32 @@ impl Iterator for AllHostsDevices<'_> {
 
 impl FusedIterator for AllHostsDevices<'_> {}
 
+#[cfg(feature = "daemon")]
+impl Into<SupportedOutputDevice> for &HostDevicePair {
+    #[inline]
+    fn into(self) -> SupportedOutputDevice {
+        SupportedOutputDevice {
+            host: self.hostid.name().to_owned(),
+            device: self.device.name().unwrap_or_default(),
+            stream_configs: self.configs.collect(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::AllHostsDevices;
     use cpal::traits::{DeviceTrait, HostTrait};
 
-    #[test]
     // Test if the iterator can be exhausted and doesn't cause a stack overflow.
+    #[test]
     fn allhostsdevices_exhaust() {
         for _ in AllHostsDevices::iter() {}
     }
 
+    // Test if the iterator yields the default output device.
+    // [AllHostsDevices] should yield every device which includes the default
+    // output.
     #[test]
     fn allhostdevices_has_default_output() {
         let default_output = cpal::default_host()

@@ -1,9 +1,11 @@
 use std::fmt::{self, Display, Formatter};
 
-use cpal::{BackendSpecificError, DevicesError, HostId, HostUnavailable};
+use cpal::{
+    BackendSpecificError, DevicesError, HostId, HostUnavailable, SupportedStreamConfigsError,
+};
 use thiserror::Error;
 
-#[derive(Clone, Debug, Error)]
+#[derive(Debug, Error)]
 pub enum HostErrorKind {
     #[error("{0}")]
     Backend(#[from] BackendSpecificError),
@@ -11,9 +13,11 @@ pub enum HostErrorKind {
     Devices(#[from] DevicesError),
     #[error("{0}")]
     HostUnavailable(#[from] HostUnavailable),
+    #[error("{0}")]
+    StreamConfig(#[from] SupportedStreamConfigsError),
 }
 
-#[derive(Clone, Debug, Error)]
+#[derive(Debug, Error)]
 pub struct HostError {
     error: HostErrorKind,
     hostid: Option<HostId>,

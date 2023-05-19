@@ -1,0 +1,13 @@
+[package]
+name = "yohane"
+description = "Yohane implements a protocol to communicate with the Kasukasu daemon."
+authors = ["Joshua Megnauth <>"]
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/joshuamegnauth54/kasumin"
+license = "GPL-3.0"
+keywords = ["music", "multimedia", "media", "protocol", "application"]
+categories = ["multimedia::audio", "network-programming"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }

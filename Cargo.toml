@@ -19,7 +19,8 @@ strip = true
 [workspace]
 members = [
     "kasukasu",
-    "hoshizora"
+    "hoshizora",
+    "yohane"
 ]
 
 [dependencies]
