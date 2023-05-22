@@ -9,5 +9,9 @@ license = "GPL-3.0"
 keywords = ["music", "multimedia", "media", "protocol", "application"]
 categories = ["multimedia::audio", "network-programming"]
 
+[features]
+from_cpal = ["dep:cpal"]
+
 [dependencies]
+cpal = { version = "0.15.2", optional = true }
 serde = { version = "1.0", features = ["derive"] }

@@ -1,16 +1,15 @@
 use crate::hosterror::HostError;
 use cpal::{
     traits::{DeviceTrait, HostTrait},
-    Device, Devices, HostId, OutputDevices, SupportedOutputConfigs,
+    Device, Devices, HostId, OutputDevices, SupportedStreamConfigRange,
 };
 use std::{
     iter::{FusedIterator, Peekable},
     slice,
 };
-use yohane::query::SupportedOutputDevice;
 
 #[cfg(feature = "daemon")]
-use yohane::deviceconfig::{SampleFormat, SupportedDeviceConfig};
+use yohane::query::SupportedOutputDevice;
 
 /// Container for [HostId] and an associated output [Device].
 pub struct HostDevicePair {
@@ -19,7 +18,7 @@ pub struct HostDevicePair {
     /// An output device as exposed by the [Host].
     pub device: Device,
     /// Supported output configs.
-    pub configs: SupportedOutputConfigs,
+    pub configs: Vec<SupportedStreamConfigRange>,
 }
 
 /// Iterator over all hosts and all output devices.
@@ -70,7 +69,7 @@ impl Iterator for AllHostsDevices<'_> {
                 Ok(configs) => Some(Ok(HostDevicePair {
                     hostid,
                     device,
-                    configs,
+                    configs: configs.collect(),
                 })),
                 Err(e) => Some(Err(HostError::new(
                     e.into(),
@@ -118,14 +117,22 @@ impl Iterator for AllHostsDevices<'_> {
 impl FusedIterator for AllHostsDevices<'_> {}
 
 #[cfg(feature = "daemon")]
-impl Into<SupportedOutputDevice> for &HostDevicePair {
+impl From<&HostDevicePair> for SupportedOutputDevice {
     #[inline]
-    fn into(self) -> SupportedOutputDevice {
-        SupportedOutputDevice {
-            host: self.hostid.name().to_owned(),
-            device: self.device.name().unwrap_or_default(),
-            stream_configs: self.configs.collect(),
+    fn from(value: &HostDevicePair) -> Self {
+        Self {
+            host: value.hostid.name().to_owned(),
+            device: value.device.name().unwrap_or_default(),
+            stream_configs: value.configs.iter().map(Into::into).collect(),
         }
+    }
+}
+
+#[cfg(feature = "daemon")]
+impl From<HostDevicePair> for SupportedOutputDevice {
+    #[inline(always)]
+    fn from(value: HostDevicePair) -> Self {
+        value.into()
     }
 }
 

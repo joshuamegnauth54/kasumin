@@ -17,12 +17,4 @@ lto = true
 strip = true
 
 [workspace]
-members = [
-    "kasukasu",
-    "hoshizora",
-    "yohane"
-]
-
-[dependencies]
-kasukasu = { path = "kasukasu", version = "0.1.0" }
-hoshizora = { path = "hoshizora" , version = "0.1.0", optional = true }
+members = ["kasukasu", "hoshizora", "yohane"]
