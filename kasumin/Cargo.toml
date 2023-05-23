@@ -1,21 +1,28 @@
 [package]
-name = "kasukasu"
-description = "Kasukasu is Kasumin's music player server."
+name = "kasumin"
+description = "Kasumin plays music using a client-server architecture."
 authors = ["Joshua Megnauth <>"]
 version = "0.1.0"
 edition = "2021"
 repository = "https://github.com/joshuamegnauth54/kasumin"
 license = "GPL-3.0"
 keywords = ["music", "multimedia", "media", "server", "application"]
-categories = ["command-line-interface", "multimedia::audio"]
+categories = [
+    "command-line-interface",
+    "multimedia::audio",
+    "network-programming",
+]
+
+[package.metadata.docs.rs]
+all-features = true
 
 [[bin]]
-name = "kasukasud"
+name = "kasumind"
 required-features = ["daemon"]
-path = "src/daemon/main.rs"
+path = "src/server/main.rs"
 
 [lib]
-name = "kasukasu"
+name = "kasumin"
 path = "src/lib/lib.rs"
 
 [features]

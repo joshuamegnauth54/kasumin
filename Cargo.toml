@@ -1,20 +1,6 @@
-[package]
-name = "kasumin"
-description = "Kasumin plays music using a client-server architecture."
-authors = ["Joshua Megnauth <>"]
-version = "0.1.0"
-edition = "2021"
-repository = "https://github.com/joshuamegnauth54/kasumin"
-license = "GPL-3.0"
-keywords = ["music", "multimedia", "media", "gui", "application"]
-categories = ["command-line-interface", "multimedia::audio"]
-
-[package.metadata.docs.rs]
-all-features = true
-
 [profile.release]
 lto = true
 strip = true
 
 [workspace]
-members = ["kasukasu", "hoshizora", "yohane"]
+members = ["kasumin", "hoshizora", "yohane"]

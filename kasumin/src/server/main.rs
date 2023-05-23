@@ -1,6 +1,6 @@
-mod kasukasud;
+mod kasu_server;
 
-use kasukasud::Kasukasud;
+use kasu_server::KasuminServer;
 use tracing::info;
 
 #[tokio::main]
@@ -15,5 +15,5 @@ async fn main() {
     tracing::subscriber::set_global_default(subscriber).unwrap();
 
     info!("Starting Kasumin music daemon");
-    Kasukasud::start("127.0.0.1:6666").await.unwrap();
+    KasuminServer::start("127.0.0.1:6666").await.unwrap();
 }

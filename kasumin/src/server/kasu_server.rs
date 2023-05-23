@@ -3,9 +3,9 @@ use tokio::net::{self, TcpListener, ToSocketAddrs};
 use tracing::{debug, error, info};
 use yohane::{KasuminRequest, KasuminResponse};
 
-pub(crate) struct Kasukasud;
+pub(crate) struct KasuminServer;
 
-impl Kasukasud {
+impl KasuminServer {
     #[tracing::instrument]
     pub async fn start<A>(address: A) -> io::Result<()>
     where

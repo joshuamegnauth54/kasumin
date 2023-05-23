@@ -1,10 +1,20 @@
 [package]
 name = "hoshizora"
+description = "Hoshizora implements reference UIs for Kasumin player."
+authors = ["Joshua Megnauth <>"]
 version = "0.1.0"
 edition = "2021"
+repository = "https://github.com/joshuamegnauth54/kasumin"
+license = "GPL-3.0"
+keywords = ["music", "multimedia", "media", "protocol", "application"]
+categories = ["multimedia::audio", "network-programming"]
+
+[package.metadata.docs.rs]
+all-features = true
 
 [[bin]]
 name = "hoshi_cli"
 path = "src/cli/main.rs"
 
 [dependencies]
+yohane = { version = "0.1.0", path = "../yohane" }

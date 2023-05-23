@@ -9,6 +9,9 @@ license = "GPL-3.0"
 keywords = ["music", "multimedia", "media", "protocol", "application"]
 categories = ["multimedia::audio", "network-programming"]
 
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
 from_cpal = ["dep:cpal"]
 
