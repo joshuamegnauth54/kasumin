@@ -3,12 +3,24 @@
 
 pub mod deviceconfig;
 pub mod query;
+pub mod connect;
 
 use query::{QueryRequest, QueryResponse};
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct KasuminRequest {
+    pub uuid: String,
+    pub message: RequestKind
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct KasuminResponse {
+    pub message: ResponseKind
+}
+
 #[derive(Clone, Copy, Deserialize, Serialize)]
-pub enum KasuminRequest {
+pub enum RequestKind {
     Query(QueryRequest),
 }
 
