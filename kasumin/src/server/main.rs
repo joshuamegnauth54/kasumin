@@ -1,6 +1,7 @@
 mod connection;
 mod kasu_server;
 mod server_error;
+mod connect_message;
 
 use kasu_server::KasuminServer;
 use tracing::info;

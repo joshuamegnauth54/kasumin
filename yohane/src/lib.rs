@@ -1,30 +1,34 @@
 //! Yohane implements a simple protocol to control playback for a Kasumin
 //! instance.
 
+pub mod connect;
 pub mod deviceconfig;
 pub mod query;
-pub mod connect;
 
+use connect::{ConnectRequest, ConnectResponse};
 use query::{QueryRequest, QueryResponse};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct KasuminRequest {
     pub uuid: String,
-    pub message: RequestKind
+    pub message: RequestKind,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct KasuminResponse {
-    pub message: ResponseKind
+    pub message: ResponseKind,
 }
 
-#[derive(Clone, Copy, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum RequestKind {
     Query(QueryRequest),
+    Connect(ConnectRequest),
 }
 
-#[derive(Clone, Deserialize, Serialize)]
-pub enum KasuminResponse {
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum ResponseKind {
+    Ready,
     Query(QueryResponse),
+    Connect(ConnectResponse),
 }

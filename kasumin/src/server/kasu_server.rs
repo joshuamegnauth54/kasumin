@@ -1,30 +1,41 @@
-use std::{fmt::Debug, io, collections::HashMap};
+use super::connection::Client;
+use std::{collections::HashMap, fmt::Debug, io};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt, BufWriter},
-    net::{self, TcpListener, ToSocketAddrs},
-    sync::{mpsc, watch}
+    net::{self, TcpListener, TcpStream, ToSocketAddrs},
+    sync::{mpsc, watch},
 };
 use tracing::{debug, error, info};
 use yohane::{KasuminRequest, KasuminResponse};
 
+#[derive(Debug)]
 pub(crate) struct KasuminServer {
-    /// Structured messages to send to a client
-    client_send: mpsc::UnboundedSender<KasuminMessage>,
+    /// Channel for clients to send structured messages
+    client_send: mpsc::UnboundedSender<KasuminRequest>,
     /// Structured (parsed) messages received from a client
-    client_recv: mpsc::UnboundedReceiver<KasuminMessage>,
-    // client_sync: watch::Receiver<KasuminMessage>,
+    recv: mpsc::UnboundedReceiver<KasuminRequest>,
+    /// Responses to send to client to synchronize their state (i.e. when the
+    /// volume or song is changed)
+    sync: watch::Sender<KasuminResponse>,
+    /// Watcher for clients
+    sync_recv: watch::Receiver<KasuminResponse>,
     /// Confirmed and alive clients
-    clients: HashMap<String, Client>,
+    clients: HashMap<String, LocalClient>,
 }
 
 impl KasuminServer {
     #[inline]
     pub fn new(buffer_size: usize) -> Self {
-        let (client_send, client_recv) = mpsc::unbounded_channel(buffer_size);
+        let (client_send, recv) = mpsc::unbounded_channel();
+        let (sync, sync_recv) = watch::channel(KasuminResponse {
+            message: yohane::ResponseKind::Ready,
+        });
         Self {
             client_send,
-            client_recv,
-            clients: HashMap::new()
+            recv,
+            sync,
+            sync_recv,
+            clients: HashMap::new(),
         }
     }
 
@@ -49,9 +60,14 @@ impl KasuminServer {
 
         while let (client, client_addr) = server.accept().await? {
             info!("Client `{client_addr}` connected");
-            tokio::spawn(self.handle_client(client));
+            tokio::spawn(KasuminServer::handle_client(client));
         }
 
         Ok(())
+    }
+
+    #[tracing::instrument]
+    async fn handle_client(client: TcpStream) {
+        Client::connect(client, self.sync_recv.clone(), self.buffer_size).await?;
     }
 }
