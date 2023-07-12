@@ -10,4 +10,4 @@ testall:
 	cargo test --all --no-fail-fast --all-features
 
 test:
-	cargo test --all --no-fail-fast --features "all_codes daemon spotify"
+	cargo test --all --no-fail-fast --features "all_codecs daemon spotify"

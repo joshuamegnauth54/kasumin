@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct KasuminRequest {
     pub uuid: String,
+    pub version: u16,
     pub message: RequestKind,
 }
 

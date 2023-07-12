@@ -5,9 +5,12 @@ use bytes::{buf, Buf, BufMut, Bytes, BytesMut};
 use rmp_serde::decode::Error as DecodeError;
 use std::{net::SocketAddr, num::NonZeroU32};
 use tokio::{
-    io::{AsyncRead, AsyncReadExt, AsyncWrite, BufStream},
-    net::TcpStream,
-    sync::{mpsc, watch, oneshot},
+    io::{AsyncBufReadExt, AsyncRead, AsyncReadExt, AsyncWrite, BufReader, BufStream, BufWriter},
+    net::{
+        tcp::{OwnedReadHalf, OwnedWriteHalf},
+        TcpStream,
+    },
+    sync::{mpsc, oneshot, watch},
 };
 use yohane::{KasuminRequest, KasuminResponse};
 
@@ -35,60 +38,103 @@ pub(super) struct Client {
     /// Raw, buffered stream to communicate with the client
     /// Bytes are decoded or encoded into [KasuminMessage]s. Stream errors send
     /// a signal to the server to deregister this client.
-    stream: BufStream<TcpStream>,
+    stream_recv: BufReader<OwnedReadHalf>,
+    /// Send half of the stream for client communication
+    stream_send: BufWriter<OwnedWriteHalf>,
     /// Buffer to decode Kasumin's communication frames
     buf: BytesMut,
-    /// Server message receiver
+    /// Server message receiver. Clients don't need one on one access to the
+    /// server, but they do need to be synced
     server_recv: watch::Receiver<KasuminResponse>,
-    /// Server structured message sender
-    send: mpsc::Sender<KasuminRequest>
+    /// Send structured messages to the server
+    server_send: mpsc::Sender<KasuminRequest>,
 }
 
 impl Client {
     #[tracing::instrument]
     pub async fn connect(
+        // Client stream
         stream: TcpStream,
+        // Send updates to the server
+        server_send: mpsc::Sender<KasuminRequest>,
+        // Receive updates from the server
         server_recv: watch::Receiver<KasuminResponse>,
-        uuid_send: oneshot::Sender<KasuminRequest>,
+        // Clients that successfully connect need to send their names and receive a UUID.
+        name_send: oneshot::Sender<KasuminRequest>,
+        // Buffer capacity
         limit: NonZeroU32,
     ) -> Result<Self, ServerError> {
         // Try to get an envelope and name from the client as part of the connection
         // process
         let buf_cap = limit.get().try_into().expect("usize < u32");
-        let stream = BufStream::with_capacity(buf_cap, buf_cap, stream);
+        let (stream_recv, stream_send) = stream.into_split();
+        let stream_recv = BufReader::with_capacity(buf_cap, stream_recv);
+        let stream_send = BufWriter::with_capacity(buf_cap, stream_send);
 
         // Connection handshake; client should send its name
         let data_len = Client::decode_envelope(&mut stream, limit)
             .await
             .map_err(|kind| ServerError::new(kind, None, None))?;
 
+        // Send name and receive a UUID
+        let (uuid_send, uuid_recv) = oneshot::channel();
+
         // Client fields
         let buf = BytesMut::with_capacity(buf_cap);
+
+        Ok(Self {
+            name,
+            uuid,
+            stream_send,
+            stream_recv,
+            buf,
+            server_recv,
+            server_send,
+        })
     }
 
-    pub async fn process_frames(&mut self, limit: NonZeroU32) -> Result<(), ServerError> {
+    pub async fn server_frames(&mut self) {
+        while self.server_recv.changed().await.is_ok() {}
+    }
+
+    pub async fn request_frames(&mut self, limit: NonZeroU32) -> Result<(), ServerError> {
         loop {
             self.buf.clear();
 
             // Decode the length of the frame from the envelope. Zero length data is always
             // invalid.
-            let frame_len = Client::decode_envelope(&mut self.stream, limit)
+            let frame_len = Client::decode_envelope(&mut self.stream_recv, limit)
                 .await
                 .map_err(|kind| {
                     ServerError::new(kind, Some(self.name.as_ref()), Some(self.uuid.as_ref()))
                 })?;
-            loop {
-                let request = self.stream.read(&mut self.buf).await.map_err(|e| {
+
+            // Read the exact amount of bytes specified from the frame length
+            let read_len = self
+                .stream_recv
+                .read_exact(&mut self.buf[..frame_len])
+                .await
+                .map_err(|e| {
                     ServerError::new(e.into(), Some(self.name.as_ref()), Some(self.uuid.as_ref()))
                 })?;
-            }
+
+            // Decode MessagePack and send it to the server.
+            let request = Client::decode_message(&self.buf[..frame_len.into()])?;
+            self.send(request).await?;
         }
     }
 
-    async fn decode_envelope(
-        stream: &mut BufStream<TcpStream>,
+    async fn send(&mut self, request: KasuminRequest) -> Result<(), ServerError> {
+
+    }
+
+    async fn decode_envelope<R>(
+        stream: &mut R,
         limit: NonZeroU32,
-    ) -> Result<NonZeroU32, ServerErrorKind> {
+    ) -> Result<NonZeroU32, ServerErrorKind>
+    where
+        R: AsyncRead + AsyncReadExt + Unpin,
+    {
         // The transport envelope is `kasu:u32\r\n`
         let mut envelope = [0u8; ENVELOPE_SIZE];
         let read_len = stream
@@ -144,10 +190,8 @@ impl Client {
 
     // Decode a request from the client to send to the server.
     #[inline]
-    fn decode_message(msgpack: &[u8]) -> Result<Option<KasuminRequest>, ServerErrorKind> {
-        rmp_serde::decode::from_read(msgpack)
-            .map(Option::Some)
-            .map_err(ServerErrorKind::Decode)
+    fn decode_message(msgpack: &[u8]) -> Result<KasuminRequest, ServerErrorKind> {
+        rmp_serde::decode::from_read(msgpack).map_err(ServerErrorKind::Decode)
     }
 
     // Encode a response from the server into bytes to send to the client.

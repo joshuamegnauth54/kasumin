@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt::Debug, io};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt, BufWriter},
     net::{self, TcpListener, TcpStream, ToSocketAddrs},
-    sync::{mpsc, watch},
+    sync::{mpsc, watch, oneshot},
 };
 use tracing::{debug, error, info};
 use yohane::{KasuminRequest, KasuminResponse};
@@ -68,6 +68,7 @@ impl KasuminServer {
 
     #[tracing::instrument]
     async fn handle_client(client: TcpStream) {
-        Client::connect(client, self.sync_recv.clone(), self.buffer_size).await?;
+        let (name_send, name_recv) = oneshot::channel();
+        Client::connect(client, self.sync_recv.clone(), name_send, self.buffer_size).await?;
     }
 }
