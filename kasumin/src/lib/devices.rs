@@ -8,9 +8,6 @@ use std::{
     slice,
 };
 
-#[cfg(feature = "daemon")]
-use yohane::query::SupportedOutputDevice;
-
 /// Container for [HostId] and an associated output [Device].
 pub struct HostDevicePair {
     /// API that exposes the current [Device], such as ALSA.
@@ -112,29 +109,15 @@ impl Iterator for AllHostsDevices<'_> {
             None
         }
     }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        // AllHostsDevices will always yield at least the length of `hostids`.
+        (self.hostids.len(), None)
+    }
 }
 
 impl FusedIterator for AllHostsDevices<'_> {}
-
-#[cfg(feature = "daemon")]
-impl From<&HostDevicePair> for SupportedOutputDevice {
-    #[inline]
-    fn from(value: &HostDevicePair) -> Self {
-        Self {
-            host: value.hostid.name().to_owned(),
-            device: value.device.name().unwrap_or_default(),
-            stream_configs: value.configs.iter().map(Into::into).collect(),
-        }
-    }
-}
-
-#[cfg(feature = "daemon")]
-impl From<HostDevicePair> for SupportedOutputDevice {
-    #[inline(always)]
-    fn from(value: HostDevicePair) -> Self {
-        value.into()
-    }
-}
 
 #[cfg(test)]
 mod tests {
