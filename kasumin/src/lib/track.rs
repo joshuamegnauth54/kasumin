@@ -1,5 +1,5 @@
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Eq, PartialEq)]
 pub struct TrackMetadata<'track> {
-    path: &'track str
+    pub path: &'track str
 }

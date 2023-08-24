@@ -1,6 +1,6 @@
 [profile.release]
 lto = true
-strip = true
+strip = "symbols"
 
 [workspace]
 members = ["kasumin", "hoshizora", "yohane"]

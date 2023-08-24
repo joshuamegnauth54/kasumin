@@ -21,9 +21,8 @@ name = "kasumin"
 path = "src/lib/lib.rs"
 
 [features]
-default = ["all_codecs", "fx_hash"]
+default = ["all_codecs"]
 spotify = ["dep:librespot", "dep:keyring"]
-fx_hash = ["dep:rustc-hash"]
 
 # Codecs
 all_codecs = ["aac", "flac", "isomp4", "mp3", "vorbis", "wav"]
@@ -34,26 +33,35 @@ mp3 = ["rodio/symphonia-mp3"]
 vorbis = ["rodio/symphonia-vorbis"]
 wav = ["rodio/symphonia-wav"]
 
+# Logging
+release_max_level_info = ["tracing/release_max_level_info"]
+
 # Sound server APIs
 asio = ["cpal/asio"]
 jack = ["cpal/jack"]
 
 [dependencies]
-cpal = "0.15.2"
-priority-queue = "1.3.2"
-rodio = { version = "0.17.1", default-features = false }
-rustc-hash = { version = "1.1.0", optional = true }
+# Audio
+cpal = "0.15"
+rodio = { version = "0.17", default-features = false }
+symphonia-metadata = "0.5"
+
+# Logging and errors
 thiserror = "1.0"
 tracing = { version = "0.1" }
 tracing-subscriber = { version = "0.3" }
 
+# Search
+fst = { version = "0.4", features = ["levenshtein"] }
+smallvec = { version = "1", features = ["union"] }
+
 # Spotify
-librespot = { version = "0.4.2", optional = true }
-keyring = { version = "2.0.2", optional = true }
+librespot = { version = "0.4", optional = true }
+keyring = { version = "2.0", optional = true }
 
 # Tokio for daemon
 [dependencies.tokio]
-version = "1.3.0"
+version = "1"
 optional = true
 default-features = false
 features = [
