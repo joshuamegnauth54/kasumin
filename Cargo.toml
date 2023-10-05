@@ -3,4 +3,4 @@ lto = true
 strip = "symbols"
 
 [workspace]
-members = ["kasumin", "hoshizora", "yohane"]
+members = ["kasumin", "nico", "hoshizora", "yohane"]

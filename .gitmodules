@@ -1,0 +1,3 @@
+[submodule "nico/sqlite"]
+	path = nico/sqlite
+	url = https://github.com/sqlite/sqlite

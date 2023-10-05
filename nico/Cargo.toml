@@ -1,0 +1,34 @@
+[package]
+name = "nico"
+description = "Nico manages Kasumin's music library."
+authors = ["Josh Megnauth <jo.sh@tutanota.com>"]
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/joshuamegnauth54/kasumin"
+license = "GPL-3.0"
+
+[package.metadata.docs.rs]
+all-features = true
+
+[features]
+default = ["release_max_level_info"]
+release_max_level_info = ["tracing/release_max_level_info"]
+
+[dependencies]
+sqlx = { version = "0.7", features = [
+    "runtime-tokio",
+    "sqlite",
+    "macros",
+    "time",
+] }
+
+# Logging and errors
+thiserror = "1.0"
+tracing = "0.1"
+
+# Metadata for audio files
+symphonia-metadata = "0.5"
+
+
+[build-dependencies]
+cc = "1.0"

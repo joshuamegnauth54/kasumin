@@ -21,7 +21,7 @@ name = "kasumin"
 path = "src/lib/lib.rs"
 
 [features]
-default = ["all_codecs"]
+default = ["all_codecs", "release_max_level_info"]
 spotify = ["dep:librespot", "dep:keyring"]
 
 # Codecs
@@ -34,7 +34,7 @@ vorbis = ["rodio/symphonia-vorbis"]
 wav = ["rodio/symphonia-wav"]
 
 # Logging
-release_max_level_info = ["tracing/release_max_level_info"]
+release_max_level_info = ["tracing/release_max_level_info", "nico/release_max_level_info"]
 
 # Sound server APIs
 asio = ["cpal/asio"]
@@ -45,6 +45,9 @@ jack = ["cpal/jack"]
 cpal = "0.15"
 rodio = { version = "0.17", default-features = false }
 symphonia-metadata = "0.5"
+
+# Library
+nico = { version = "0.1", path = "../nico" }
 
 # Logging and errors
 thiserror = "1.0"
